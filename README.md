@@ -10,7 +10,7 @@ Extracted directly from the latest iTunes installer using the [makeportable](htt
 
 1. Download QTfiles (if you are using qaac.exe) or QTfiles64 (if you are using qaac64.exe).
 2. Place the QTfiles folder if you are using qaac.exe or QTfiles64 folder if you are using qaac64.exe besides the qaac executable file.
-3. Finished.
+3. Finished. qaac is now portable.
 
 ## Infos about the "icudt55.dll"
 The "icudt55.dll" in the repo is just a [dummy file](https://hydrogenaud.io/index.php/topic,85135.msg907418.html#msg907418) because most of the content in the icudt55.dll is not required. But the original file is in the icudt55.7z. GitHub can't take files larger than 25MB so we compressed it.
