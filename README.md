@@ -2,7 +2,7 @@
 
 Apple's [Core Audio AAC encoder](https://wiki.hydrogenaud.io/index.php?title=Apple_AAC) for [qaac](https://github.com/nu774/qaac).
 
-This is the files required for qaac to work without installing iTunes, QuickTimeAppleApplicationSupportfmsi 
+This is the files required for qaac to encode without installing iTunes, QuickTime, or AppleApplicationSupport.msi.
 
 Extracted directly from the latest iTunes installer using the [makeportable](https://sites.google.com/site/qaacpage/cabinet/makeportable.zip) script from the qaac's site.
 
@@ -19,4 +19,3 @@ The "icudt55.dll" in the repo is just a [dummy file](https://hydrogenaud.io/inde
 
 ### More Infos
 [Using qaac without iTunes](https://github.com/wieslawsoltes/BatchEncoder/wiki/Tutorial-Using-qaac-without-iTunes)
-
