@@ -4,7 +4,7 @@ Apple's [Core Audio AAC encoder](https://wiki.hydrogenaud.io/index.php?title=App
 
 This is the files required for qaac to encode without installing iTunes, QuickTime, or AppleApplicationSupport.msi.
 
-Extracted directly from the latest iTunes installer using the [makeportable](https://sites.google.com/site/qaacpage/cabinet/makeportable.zip) script from the qaac's site.
+Extracted directly from the latest iTunes installer using the [makeportable](https://sites.google.com/site/qaacpage/cabinet/makeportable.zip) script from the [qaac's site](https://sites.google.com/site/qaacpage/).
 
 ## Installation
 
