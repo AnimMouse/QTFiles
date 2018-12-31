@@ -8,7 +8,7 @@ Extracted directly from the latest iTunes installer using the [makeportable](htt
 
 ## Installation
 
-1. Download QTfiles (if you are using qaac.exe) or QTfiles64 (if you are using qaac64.exe).
+1. Download [QTfiles](https://github.com/AnimMouse/QTFiles/releases/download/v12.9.2.6/QTfiles.7z) (if you are using qaac.exe) or [QTfiles64](https://github.com/AnimMouse/QTFiles/releases/download/v12.9.2.6/QTfiles64.7z) (if you are using qaac64.exe).
 2. Place the QTfiles folder if you are using qaac.exe or QTfiles64 folder if you are using qaac64.exe besides the qaac executable file.
 3. Finished. qaac is now portable.
 
@@ -17,5 +17,40 @@ The "icudt55.dll" in the repo is just a [dummy file](https://hydrogenaud.io/inde
 
 "For encoding only, most of the content in the icudt55.dll is not required. But the file icudt55.dll can't be deleted, the encoder would refuse to work if it is not present. But you can replace the original files of several MB size with the tiny dummy DLL's, and the encoder still works." - LigH
 
+### Directory Tree
+
+* For 32 bit
+  * qaac.exe
+  * QTfiles
+    * ASL.dll
+    * CoreAudioToolbox.dll
+    * CoreFoundation.dll
+    * icudt55.dll
+    * libdispatch.dll
+    * libicuin.dll
+    * libicuuc.dll
+    * msvcp100.dll
+    * msvcr100.dll
+    * objc.dll
+* For 64 bit
+  * qaac64.exe
+  * QTfiles64
+    * ASL.dll
+    * CoreAudioToolbox.dll
+    * CoreFoundation.dll
+    * icudt55.dll
+    * libdispatch.dll
+    * libicuin.dll
+    * libicuuc.dll
+    * msvcp100.dll
+    * msvcr100.dll
+    * objc.dll
+
 ### More Infos
 [Using qaac without iTunes](https://github.com/wieslawsoltes/BatchEncoder/wiki/Tutorial-Using-qaac-without-iTunes)
+
+[Apple AAC](https://wiki.hydrogenaud.io/index.php?title=Apple_AAC)
+
+[More Infos from hydrogenaudio](https://wiki.hydrogenaud.io/index.php?title=EAC_and_QAAC)
+
+My recommended GUI encoder that can use qaac: [fre:ac](https://www.freac.org/)
