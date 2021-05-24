@@ -1,0 +1,129 @@
+name: Get QTfiles from iTunes Installer
+on:
+  push:
+    paths:
+      - ".github/workflows/get-qtfiles.yml"
+      
+env:
+  itunes_version: "12.10.11"
+  
+jobs:
+  download:
+    env:
+      win64_url: "https://secure-appldnld.apple.com/itunes12/001-80053-20210422-E8A3B28C-A3B2-11EB-BE07-CE1B67FC6302/iTunes64Setup.exe"
+      win32_url: "https://secure-appldnld.apple.com/itunes12/001-80042-20210422-E8A351F2-A3B2-11EB-9A8F-CF1B67FC6302/iTunesSetup.exe"
+      
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download iTunes Installer 64 bit
+        run: aria2c -x 16 -o "iTunes64Setup.exe" "$win64_url"
+        
+      - name: Download iTunes Installer 32 bit
+        run: aria2c -x 16 -o "iTunesSetup.exe" "$win32_url"
+        
+      - name: Upload iTunes Installer 64 bit
+        uses: actions/upload-artifact@v2
+        with:
+          name: iTunes64Setup
+          path: iTunes64Setup.exe
+          
+      - name: Upload iTunes Installer 32 bit
+        uses: actions/upload-artifact@v2
+        with:
+          name: iTunesSetup
+          path: iTunesSetup.exe
+          
+  extract:
+    needs: download
+    runs-on: windows-latest
+    strategy:
+      matrix:
+        bit: [win64, win32]
+        
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+        with:
+          submodules: true
+          persist-credentials: false
+          
+      - name: Move makeportable
+        run: Move-Item .\makeportable\makeportable2.cmd makeportable2.cmd
+        
+      - name: Download iTunes 64 bit
+        if: ${{ matrix.bit == 'win64' }}
+        uses: actions/download-artifact@v2
+        with:
+          name: iTunes64Setup
+          
+      - name: Download iTunes 32 bit
+        if: ${{ matrix.bit == 'win32' }}
+        uses: actions/download-artifact@v2
+        with:
+          name: iTunesSetup
+          
+      - name: Use makeportable to extract QTfiles
+        shell: cmd
+        run: makeportable2.cmd
+        
+      - name: Upload QTfiles64
+        if: ${{ matrix.bit == 'win64' }}
+        uses: actions/upload-artifact@v2
+        with:
+          name: QTfiles64
+          path: QTfiles64
+          
+      - name: Upload QTfiles
+        if: ${{ matrix.bit == 'win32' }}
+        uses: actions/upload-artifact@v2
+        with:
+          name: QTfiles
+          path: QTfiles
+          
+  archive:
+    needs: [download, extract]
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        bit: [QTfiles64, QTfiles]
+        
+    steps:
+      - name: Download ${{ matrix.bit }}
+        uses: actions/download-artifact@v2
+        with:
+          name: ${{ matrix.bit }}
+          
+      - name: 7zip ${{ matrix.bit }}
+        run: 7z a "${{matrix.bit}}.7z" "./${{matrix.bit}}/*" -mx=9
+        
+      - name: Upload ${{ matrix.bit }}
+        uses: actions/upload-artifact@v2
+        with:
+          name: ${{ matrix.bit }}-archive
+          path: ${{ matrix.bit }}.7z
+          
+  release:
+    needs: [download, extract, archive]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download QTfiles64 archive
+        uses: actions/download-artifact@v2
+        with:
+          name: QTfiles64-archive
+          
+      - name: Download QTfiles archive
+        uses: actions/download-artifact@v2
+        with:
+          name: QTfiles-archive
+          
+      - name: Release
+        uses: softprops/action-gh-release@v1
+        with:
+          name: v${{ env.itunes_version }}
+          tag_name: v${{ env.itunes_version }}
+          body: Extracted from the version ${{ env.itunes_version }} of Windows iTunes.
+          files: |
+            QTfiles64.7z
+            QTfiles.7z
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
