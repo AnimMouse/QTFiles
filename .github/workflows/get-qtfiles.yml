@@ -6,39 +6,39 @@ on:
       
 env:
   itunes_version: "12.10.11"
+  icu_version: "icudt62"
   
 jobs:
   download:
     env:
       win64_url: "https://secure-appldnld.apple.com/itunes12/001-80053-20210422-E8A3B28C-A3B2-11EB-BE07-CE1B67FC6302/iTunes64Setup.exe"
       win32_url: "https://secure-appldnld.apple.com/itunes12/001-80042-20210422-E8A351F2-A3B2-11EB-9A8F-CF1B67FC6302/iTunesSetup.exe"
-      
+    strategy:
+      matrix:
+        bit: [iTunes64Setup, iTunesSetup]
+        
     runs-on: ubuntu-latest
     steps:
       - name: Download iTunes Installer 64 bit
+        if: ${{ matrix.bit == 'iTunes64Setup' }}
         run: aria2c -x 16 -o "iTunes64Setup.exe" "$win64_url"
         
       - name: Download iTunes Installer 32 bit
+        if: ${{ matrix.bit == 'iTunesSetup' }}
         run: aria2c -x 16 -o "iTunesSetup.exe" "$win32_url"
         
-      - name: Upload iTunes Installer 64 bit
+      - name: Upload ${{ matrix.bit }}
         uses: actions/upload-artifact@v2
         with:
-          name: iTunes64Setup
-          path: iTunes64Setup.exe
-          
-      - name: Upload iTunes Installer 32 bit
-        uses: actions/upload-artifact@v2
-        with:
-          name: iTunesSetup
-          path: iTunesSetup.exe
+          name: ${{ matrix.bit }}
+          path: ${{ matrix.bit }}.exe
           
   extract:
     needs: download
     runs-on: windows-latest
     strategy:
       matrix:
-        bit: [win64, win32]
+        bit: [QTfiles64, QTfiles]
         
     steps:
       - name: Checkout
@@ -50,35 +50,60 @@ jobs:
       - name: Move makeportable
         run: Move-Item .\makeportable\makeportable2.cmd makeportable2.cmd
         
-      - name: Download iTunes 64 bit
-        if: ${{ matrix.bit == 'win64' }}
+      - name: Download iTunes Installer 64 bit
+        if: ${{ matrix.bit == 'QTfiles64' }}
         uses: actions/download-artifact@v2
         with:
           name: iTunes64Setup
           
-      - name: Download iTunes 32 bit
-        if: ${{ matrix.bit == 'win32' }}
+      - name: Download iTunes Installer 32 bit
+        if: ${{ matrix.bit == 'QTfiles' }}
         uses: actions/download-artifact@v2
         with:
           name: iTunesSetup
           
-      - name: Use makeportable to extract QTfiles
+      - name: Use makeportable to extract ${{ matrix.bit }}
         shell: cmd
         run: makeportable2.cmd
         
-      - name: Upload QTfiles64
-        if: ${{ matrix.bit == 'win64' }}
-        uses: actions/upload-artifact@v2
-        with:
-          name: QTfiles64
-          path: QTfiles64
+      - name: Move dummy ${{ env.icu_version }}.dll to ${{ matrix.bit }}
+        run: |
+          Move-Item .\${{ matrix.bit }}\${{ env.icu_version }}.dll ${{ env.icu_version }}.dll
+          Move-Item .\dummy\${{ env.icu_version }}.dll .\${{ matrix.bit }}\${{ env.icu_version }}.dll
           
-      - name: Upload QTfiles
-        if: ${{ matrix.bit == 'win32' }}
+      - name: Upload ${{ matrix.bit }}
         uses: actions/upload-artifact@v2
         with:
-          name: QTfiles
-          path: QTfiles
+          name: ${{ matrix.bit }}
+          path: |
+            ${{ matrix.bit }}/*.dll
+            !${{ matrix.bit }}/api-*.dll
+            !${{ matrix.bit }}/concrt140.dll
+            !${{ matrix.bit }}/msvc*.dll
+            !${{ matrix.bit }}/ucrtbase.dll
+            !${{ matrix.bit }}/vc*.dll
+            
+      - name: Upload ${{ matrix.bit }} original ${{ env.icu_version }}.dll
+        uses: actions/upload-artifact@v2
+        with:
+          name: ${{ matrix.bit }}-${{ env.icu_version }}
+          path: ${{ env.icu_version }}.dll
+          
+      - name: Upload ${{ matrix.bit }} Visual Studio Runtime
+        uses: actions/upload-artifact@v2
+        with:
+          name: ${{ matrix.bit }}-msvc
+          path: |
+            ${{ matrix.bit }}/concrt140.dll
+            ${{ matrix.bit }}/msvc*.dll
+            ${{ matrix.bit }}/ucrtbase.dll
+            ${{ matrix.bit }}/vc*.dll
+            
+      - name: Upload ${{ matrix.bit }} MS Win API
+        uses: actions/upload-artifact@v2
+        with:
+          name: ${{ matrix.bit }}-api-ms-win
+          path: ${{ matrix.bit }}/api-*.dll
           
   archive:
     needs: [download, extract]
@@ -92,15 +117,31 @@ jobs:
         uses: actions/download-artifact@v2
         with:
           name: ${{ matrix.bit }}
+          path: ${{ matrix.bit }}
+          
+      - name: Download ${{ matrix.bit }} Visual Studio Runtime
+        uses: actions/download-artifact@v2
+        with:
+          name: ${{ matrix.bit }}-msvc
+          path: ${{ matrix.bit }}-msvc
           
       - name: 7zip ${{ matrix.bit }}
         run: 7z a "${{matrix.bit}}.7z" "./${{matrix.bit}}/*" -mx=9
         
-      - name: Upload ${{ matrix.bit }}
+      - name: 7zip ${{ matrix.bit }} Visual Studio Runtime
+        run: 7z a "${{matrix.bit}}-msvc.7z" "./${{matrix.bit}}-msvc/*" -mx=9
+        
+      - name: Upload ${{ matrix.bit }} archive
         uses: actions/upload-artifact@v2
         with:
           name: ${{ matrix.bit }}-archive
           path: ${{ matrix.bit }}.7z
+          
+      - name: Upload ${{ matrix.bit }} Visual Studio Runtime archive
+        uses: actions/upload-artifact@v2
+        with:
+          name: ${{ matrix.bit }}-msvc-archive
+          path: ${{ matrix.bit }}-msvc.7z
           
   release:
     needs: [download, extract, archive]
@@ -116,14 +157,28 @@ jobs:
         with:
           name: QTfiles-archive
           
+      - name: Download QTfiles64 Visual Studio Runtime archive
+        uses: actions/download-artifact@v2
+        with:
+          name: QTfiles64-msvc-archive
+          
+      - name: Download QTfiles Visual Studio Runtime archive
+        uses: actions/download-artifact@v2
+        with:
+          name: QTfiles-msvc-archive
+          
       - name: Release
         uses: softprops/action-gh-release@v1
         with:
           name: v${{ env.itunes_version }}
           tag_name: v${{ env.itunes_version }}
-          body: Extracted from the version ${{ env.itunes_version }} of Windows iTunes.
+          body: |
+            Extracted from the version ${{ env.itunes_version }} of Windows iTunes.
+            ICU version ${{ env.icu_version }}
           files: |
             QTfiles64.7z
             QTfiles.7z
+            QTfiles64-msvc.7z
+            QTfiles-msvc.7z
         env:
           GITHUB_TOKEN: ${{ github.token }}
