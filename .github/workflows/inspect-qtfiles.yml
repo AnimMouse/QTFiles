@@ -1,0 +1,70 @@
+name: Inspect QTfiles from iTunes Installer
+on:
+  push:
+    paths:
+      - ".github/workflows/inspect-qtfiles.yml"
+      
+env:
+  itunes_version: "12.10.11"
+  
+jobs:
+  download:
+    env:
+      win64_url: "https://secure-appldnld.apple.com/itunes12/001-80053-20210422-E8A3B28C-A3B2-11EB-BE07-CE1B67FC6302/iTunes64Setup.exe"
+      win32_url: "https://secure-appldnld.apple.com/itunes12/001-80042-20210422-E8A351F2-A3B2-11EB-9A8F-CF1B67FC6302/iTunesSetup.exe"
+    strategy:
+      matrix:
+        bit: [iTunes64Setup, iTunesSetup]
+        
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download iTunes Installer 64 bit
+        if: ${{ matrix.bit == 'iTunes64Setup' }}
+        run: aria2c -x 16 -o "iTunes64Setup.exe" "$win64_url"
+        
+      - name: Download iTunes Installer 32 bit
+        if: ${{ matrix.bit == 'iTunesSetup' }}
+        run: aria2c -x 16 -o "iTunesSetup.exe" "$win32_url"
+        
+      - name: Upload ${{ matrix.bit }}
+        uses: actions/upload-artifact@v2
+        with:
+          name: ${{ matrix.bit }}
+          path: ${{ matrix.bit }}.exe
+          
+  extract:
+    needs: download
+    runs-on: windows-latest
+    strategy:
+      matrix:
+        bit: [QTfiles64, QTfiles]
+        
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+        with:
+          submodules: true
+          persist-credentials: false
+          
+      - name: Move makeportable
+        run: Move-Item .\makeportable\makeportable2.cmd makeportable2.cmd
+        
+      - name: Download iTunes Installer 64 bit
+        if: ${{ matrix.bit == 'QTfiles64' }}
+        uses: actions/download-artifact@v2
+        with:
+          name: iTunes64Setup
+          
+      - name: Download iTunes Installer 32 bit
+        if: ${{ matrix.bit == 'QTfiles' }}
+        uses: actions/download-artifact@v2
+        with:
+          name: iTunesSetup
+          
+      - name: Use makeportable to extract ${{ matrix.bit }}
+        shell: cmd
+        run: makeportable2.cmd
+        
+      - name: Inspect contents of ${{ matrix.bit }} ${{ env.itunes_version }}
+        working-directory: ${{ matrix.bit }}
+        run: Get-ChildItem
