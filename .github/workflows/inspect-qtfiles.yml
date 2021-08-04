@@ -1,17 +1,21 @@
 name: Inspect QTfiles from iTunes Installer
 on:
-  push:
-    paths:
-      - ".github/workflows/inspect-qtfiles.yml"
-      
-env:
-  itunes_version: "12.10.11"
-  
+  workflow_dispatch:
+    inputs:
+      win64_url:
+        description: "64 bit iTunes Installer for Windows"
+        required: true
+        default: "https://secure-appldnld.apple.com/itunes12/"
+      win32_url:
+        description: "32 bit iTunes Installer for Windows"
+        required: true
+        default: "https://secure-appldnld.apple.com/itunes12/"
+      itunes_version:
+        description: "Version of iTunes Installer for Windows"
+        required: true
+        default: "00.00.00"
 jobs:
   download:
-    env:
-      win64_url: "https://secure-appldnld.apple.com/itunes12/001-80053-20210422-E8A3B28C-A3B2-11EB-BE07-CE1B67FC6302/iTunes64Setup.exe"
-      win32_url: "https://secure-appldnld.apple.com/itunes12/001-80042-20210422-E8A351F2-A3B2-11EB-9A8F-CF1B67FC6302/iTunesSetup.exe"
     strategy:
       matrix:
         bit: [iTunes64Setup, iTunesSetup]
@@ -20,11 +24,11 @@ jobs:
     steps:
       - name: Download iTunes Installer 64 bit
         if: ${{ matrix.bit == 'iTunes64Setup' }}
-        run: aria2c -x 16 -o "iTunes64Setup.exe" "$win64_url"
+        run: aria2c -x 16 -o "iTunes64Setup.exe" "${{ github.event.inputs.win64_url }}"
         
       - name: Download iTunes Installer 32 bit
         if: ${{ matrix.bit == 'iTunesSetup' }}
-        run: aria2c -x 16 -o "iTunesSetup.exe" "$win32_url"
+        run: aria2c -x 16 -o "iTunesSetup.exe" ${{ github.event.inputs.win32_url }}"
         
       - name: Upload ${{ matrix.bit }}
         uses: actions/upload-artifact@v2
@@ -61,10 +65,10 @@ jobs:
         with:
           name: iTunesSetup
           
-      - name: Use makeportable to extract ${{ matrix.bit }}
+      - name: Use makeportable to extract ${{ matrix.bit }} ${{ github.event.inputs.itunes_version }}
         shell: cmd
         run: makeportable2.cmd
         
-      - name: Inspect contents of ${{ matrix.bit }} ${{ env.itunes_version }}
+      - name: Inspect contents of ${{ matrix.bit }} ${{ github.event.inputs.itunes_version }}
         working-directory: ${{ matrix.bit }}
         run: Get-ChildItem
