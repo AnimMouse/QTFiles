@@ -2,11 +2,11 @@ name: Get QTfiles from iTunes Installer
 on:
   push:
     paths:
-      - ".github/workflows/get-qtfiles.yml"
+      - .github/workflows/get-qtfiles.yml
       
 env:
-  itunes_version: "12.10.11"
-  icu_version: "icudt62"
+  itunes_version: 12.10.11
+  icu_version: icudt62
   
 jobs:
   download:
@@ -19,11 +19,11 @@ jobs:
         
     runs-on: ubuntu-latest
     steps:
-      - name: Download iTunes Installer 64 bit
+      - name: Download iTunes Installer 64-bit
         if: ${{ matrix.bit == 'iTunes64Setup' }}
         run: aria2c -x 16 -o "iTunes64Setup.exe" "$win64_url"
         
-      - name: Download iTunes Installer 32 bit
+      - name: Download iTunes Installer 32-bit
         if: ${{ matrix.bit == 'iTunesSetup' }}
         run: aria2c -x 16 -o "iTunesSetup.exe" "$win32_url"
         
@@ -50,13 +50,16 @@ jobs:
       - name: Move makeportable
         run: Move-Item .\makeportable\makeportable2.cmd makeportable2.cmd
         
-      - name: Download iTunes Installer 64 bit
+      - name: Download Dummy DLL Generator
+        run: Invoke-WebRequest "https://github.com/ykhwong/dummy-dll-generator/releases/download/20190627/dummyDLL.exe" -OutFile dummyDLL.exe
+        
+      - name: Download iTunes Installer 64-bit
         if: ${{ matrix.bit == 'QTfiles64' }}
         uses: actions/download-artifact@v2
         with:
           name: iTunes64Setup
           
-      - name: Download iTunes Installer 32 bit
+      - name: Download iTunes Installer 32-bit
         if: ${{ matrix.bit == 'QTfiles' }}
         uses: actions/download-artifact@v2
         with:
@@ -66,11 +69,20 @@ jobs:
         shell: cmd
         run: makeportable2.cmd
         
-      - name: Move dummy ${{ env.icu_version }}.dll to ${{ matrix.bit }}
-        run: |
-          Move-Item .\${{ matrix.bit }}\${{ env.icu_version }}.dll ${{ env.icu_version }}.dll
-          Move-Item .\dummy\${{ env.icu_version }}.dll .\${{ matrix.bit }}\${{ env.icu_version }}.dll
-          
+      - name: Generate dummy ${{ env.icu_version }}.dll
+        run: ./dummyDLL.exe .\${{ matrix.bit }}\${{ env.icu_version }}.dll
+        
+      - name: Move original ${{ env.icu_version }}.dll
+        run:  Move-Item .\${{ matrix.bit }}\${{ env.icu_version }}.dll .
+        
+      - name: Move generated dummy ${{ env.icu_version }}.dll 64-bit
+        if: ${{ matrix.bit == 'QTfiles64' }}
+        run: Move-Item out.dll .\${{ matrix.bit }}\${{ env.icu_version }}.dll
+        
+      - name: Move generated dummy ${{ env.icu_version }}.dll 32-bit
+        if: ${{ matrix.bit == 'QTfiles' }}
+        run: Move-Item dllmain.dll .\${{ matrix.bit }}\${{ env.icu_version }}.dll
+        
       - name: Upload ${{ matrix.bit }}
         uses: actions/upload-artifact@v2
         with:
@@ -125,11 +137,19 @@ jobs:
           name: ${{ matrix.bit }}-msvc
           path: ${{ matrix.bit }}-msvc
           
+      - name: Download ${{ matrix.bit }} original ${{ env.icu_version }}.dll
+        uses: actions/download-artifact@v2
+        with:
+          name: ${{ matrix.bit }}-${{ env.icu_version }}
+          
       - name: 7zip ${{ matrix.bit }}
         run: 7z a "${{matrix.bit}}.7z" "./${{matrix.bit}}/*" -mx=9
         
       - name: 7zip ${{ matrix.bit }} Visual Studio Runtime
         run: 7z a "${{matrix.bit}}-msvc.7z" "./${{matrix.bit}}-msvc/*" -mx=9
+        
+      - name: Zstd ${{ matrix.bit }} original ${{ env.icu_version }}.dll
+        run: zstd -19 ${icu_version}.dll -o ${{matrix.bit}}-${icu_version}.dll.zst
         
       - name: Upload ${{ matrix.bit }} archive
         uses: actions/upload-artifact@v2
@@ -142,6 +162,12 @@ jobs:
         with:
           name: ${{ matrix.bit }}-msvc-archive
           path: ${{ matrix.bit }}-msvc.7z
+          
+      - name: Upload compressed ${{ matrix.bit }} original ${{ env.icu_version }}.dll
+        uses: actions/upload-artifact@v2
+        with:
+          name: ${{ matrix.bit }}-${{ env.icu_version }}-compressed
+          path: ${{ matrix.bit }}-${{ env.icu_version }}.dll.zst
           
   release:
     needs: [download, extract, archive]
@@ -167,6 +193,16 @@ jobs:
         with:
           name: QTfiles-msvc-archive
           
+      - name: Download compressed QTfiles64 original ${{ env.icu_version }}.dll
+        uses: actions/download-artifact@v2
+        with:
+          name: QTfiles64-${{ env.icu_version }}-compressed
+          
+      - name: Download compressed QTfiles original ${{ env.icu_version }}.dll
+        uses: actions/download-artifact@v2
+        with:
+          name: QTfiles-${{ env.icu_version }}-compressed
+          
       - name: Release
         uses: softprops/action-gh-release@v1
         with:
@@ -180,5 +216,5 @@ jobs:
             QTfiles.7z
             QTfiles64-msvc.7z
             QTfiles-msvc.7z
-        env:
-          GITHUB_TOKEN: ${{ github.token }}
+            QTfiles64-${{ env.icu_version }}.dll.zst
+            QTfiles-${{ env.icu_version }}.dll.zst
