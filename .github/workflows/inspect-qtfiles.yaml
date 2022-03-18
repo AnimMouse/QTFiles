@@ -3,32 +3,33 @@ on:
   workflow_dispatch:
     inputs:
       win64_url:
-        description: "64 bit iTunes Installer for Windows"
+        description: 64-bit iTunes Installer for Windows
         required: true
-        default: "https://secure-appldnld.apple.com/itunes12/"
+        default: https://secure-appldnld.apple.com/itunes12/
       win32_url:
-        description: "32 bit iTunes Installer for Windows"
+        description: 32-bit iTunes Installer for Windows
         required: true
-        default: "https://secure-appldnld.apple.com/itunes12/"
+        default: https://secure-appldnld.apple.com/itunes12/
       itunes_version:
-        description: "Version of iTunes Installer for Windows"
+        description: Version of iTunes Installer for Windows
         required: true
-        default: "00.00.00"
+        default: 00.00.00
+        
 jobs:
   download:
+    runs-on: ubuntu-latest
     strategy:
       matrix:
         bit: [iTunes64Setup, iTunesSetup]
         
-    runs-on: ubuntu-latest
     steps:
-      - name: Download iTunes Installer 64 bit
-        if: ${{ matrix.bit == 'iTunes64Setup' }}
-        run: aria2c -x 16 -o "iTunes64Setup.exe" "${{ github.event.inputs.win64_url }}"
+      - name: Download iTunes Installer 64-bit
+        if: matrix.bit == 'iTunes64Setup'
+        run: aria2c -x 16 -o iTunes64Setup.exe "${{ github.event.inputs.win64_url }}"
         
-      - name: Download iTunes Installer 32 bit
-        if: ${{ matrix.bit == 'iTunesSetup' }}
-        run: aria2c -x 16 -o "iTunesSetup.exe" ${{ github.event.inputs.win32_url }}"
+      - name: Download iTunes Installer 32-bit
+        if: matrix.bit == 'iTunesSetup'
+        run: aria2c -x 16 -o iTunesSetup.exe "${{ github.event.inputs.win32_url }}"
         
       - name: Upload ${{ matrix.bit }}
         uses: actions/upload-artifact@v2
@@ -44,8 +45,8 @@ jobs:
         bit: [QTfiles64, QTfiles]
         
     steps:
-      - name: Checkout
-        uses: actions/checkout@v2
+      - name: Checkout repository
+        uses: actions/checkout@v3
         with:
           submodules: true
           persist-credentials: false
@@ -53,14 +54,14 @@ jobs:
       - name: Move makeportable
         run: Move-Item .\makeportable\makeportable2.cmd makeportable2.cmd
         
-      - name: Download iTunes Installer 64 bit
-        if: ${{ matrix.bit == 'QTfiles64' }}
+      - name: Download iTunes Installer 64-bit
+        if: matrix.bit == 'QTfiles64'
         uses: actions/download-artifact@v2
         with:
           name: iTunes64Setup
           
-      - name: Download iTunes Installer 32 bit
-        if: ${{ matrix.bit == 'QTfiles' }}
+      - name: Download iTunes Installer 32-bit
+        if: matrix.bit == 'QTfiles'
         uses: actions/download-artifact@v2
         with:
           name: iTunesSetup

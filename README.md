@@ -4,7 +4,7 @@ Apple's [Core Audio AAC encoder](https://wiki.hydrogenaud.io/index.php?title=App
 
 This is the files required for qaac to encode without installing iTunes, QuickTime, or AppleApplicationSupport.msi.
 
-Extracted directly from the iTunes installer using the [makeportable](https://github.com/nu774/makeportable) script from the [qaac's site](https://sites.google.com/site/qaacpage/) using [GitHub Actions](https://github.com/features/actions).
+Extracted directly from the iTunes installer using the [makeportable](https://github.com/nu774/makeportable) script from the [qaac's site](https://sites.google.com/site/qaacpage) using [GitHub Actions](https://github.com/features/actions).
 
 ## Installation
 
@@ -13,7 +13,7 @@ Extracted directly from the iTunes installer using the [makeportable](https://gi
 3. Finished. qaac is now portable.
 
 ## icudt62.dll dummy file
-The "icudt62.dll" inside the QTfiles.7z or QTfiles64.7z is just a [dummy file](https://hydrogenaud.io/index.php?topic=85135.msg977394#msg977394) because most of the content in the icudt62.dll is not required. But the original file is in the QTfiles64-icudt62.dll.zst or QTfiles-icudt62.dll.zst on the release.
+The "icudt62.dll" aka the International Components for Unicode data file inside the QTfiles.7z or QTfiles64.7z is just a [dummy file](https://hydrogenaud.io/index.php?topic=85135.msg977394#msg977394) because most of the content in the icudt62.dll is not required. But the original file is in the QTfiles64-icudt62.dll.zst or QTfiles-icudt62.dll.zst on the release.
 
 "For encoding only, most of the content in the icudt55.dll (icudt62.dll) is not required. But the file icudt55.dll (icudt62.dll) can't be deleted, the encoder would refuse to work if it is not present. But you can replace the original files of several MB size with the tiny dummy DLL's, and the encoder still works." - [LigH](https://forum.doom9.org/showthread.php?p=1831215#post1831215)
 
@@ -24,7 +24,7 @@ If you have it, no need to copy msvcp140.dll and vcruntime140.dll. If it's not w
 
 ### Directory Tree
 
-* For 32 bit
+* For 32-bit
   * qaac.exe
   * QTfiles
     * ASL.dll
@@ -35,7 +35,7 @@ If you have it, no need to copy msvcp140.dll and vcruntime140.dll. If it's not w
     * libicuin.dll
     * libicuuc.dll
     * objc.dll
-* For 64 bit
+* For 64-bit
   * qaac64.exe
   * QTfiles64
     * ASL.dll
@@ -54,4 +54,4 @@ If you have it, no need to copy msvcp140.dll and vcruntime140.dll. If it's not w
 
 [More Infos from hydrogenaudio](https://wiki.hydrogenaud.io/index.php?title=EAC_and_QAAC)
 
-My recommended GUI encoder that can use qaac: [fre:ac](https://www.freac.org/)
+My recommended GUI encoder that can use qaac: [fre:ac](https://www.freac.org)
