@@ -32,7 +32,7 @@ jobs:
         run: aria2c -x 16 -o iTunesSetup.exe "${{ github.event.inputs.win32_url }}"
         
       - name: Upload ${{ matrix.bit }}
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
           name: ${{ matrix.bit }}
           path: ${{ matrix.bit }}.exe
