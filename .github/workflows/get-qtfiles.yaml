@@ -36,7 +36,7 @@ jobs:
         run: aria2c -x 16 -o iTunesSetup.exe "${{ github.event.inputs.win32_url }}"
         
       - name: Upload ${{ matrix.bit }}
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
           name: ${{ matrix.bit }}
           path: ${{ matrix.bit }}.exe
@@ -92,7 +92,7 @@ jobs:
         run: Move-Item dllmain.dll .\QTfiles\icudt${{ github.event.inputs.icu_version }}.dll
         
       - name: Upload ${{ matrix.bit }}
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
           name: ${{ matrix.bit }}
           path: |
@@ -104,13 +104,13 @@ jobs:
             !${{ matrix.bit }}/vc*.dll
             
       - name: Upload ${{ matrix.bit }} original icudt${{ github.event.inputs.icu_version }}.dll
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
           name: ${{ matrix.bit }}-icudt${{ github.event.inputs.icu_version }}
           path: icudt${{ github.event.inputs.icu_version }}.dll
           
       - name: Upload ${{ matrix.bit }} Visual Studio Runtime
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
           name: ${{ matrix.bit }}-msvc
           path: |
@@ -120,7 +120,7 @@ jobs:
             ${{ matrix.bit }}/vc*.dll
             
       - name: Upload ${{ matrix.bit }} MS Win API
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
           name: ${{ matrix.bit }}-api-ms-win
           path: ${{ matrix.bit }}/api-*.dll
@@ -160,19 +160,19 @@ jobs:
         run: zstd -19 icudt${{ github.event.inputs.icu_version }}.dll -o ${{ matrix.bit }}-icudt${{ github.event.inputs.icu_version }}.dll.zst
         
       - name: Upload ${{ matrix.bit }} archive
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
           name: ${{ matrix.bit }}-archive
           path: ${{ matrix.bit }}.7z
           
       - name: Upload ${{ matrix.bit }} Visual Studio Runtime archive
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
           name: ${{ matrix.bit }}-msvc-archive
           path: ${{ matrix.bit }}-msvc.7z
           
       - name: Upload compressed ${{ matrix.bit }} original icudt${{ github.event.inputs.icu_version }}.dll
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
           name: ${{ matrix.bit }}-icudt${{ github.event.inputs.icu_version }}-compressed
           path: ${{ matrix.bit }}-icudt${{ github.event.inputs.icu_version }}.dll.zst
