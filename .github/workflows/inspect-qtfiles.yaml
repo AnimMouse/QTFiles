@@ -56,13 +56,13 @@ jobs:
         
       - name: Download iTunes Installer 64-bit
         if: matrix.bit == 'QTfiles64'
-        uses: actions/download-artifact@v2
+        uses: actions/download-artifact@v3
         with:
           name: iTunes64Setup
           
       - name: Download iTunes Installer 32-bit
         if: matrix.bit == 'QTfiles'
-        uses: actions/download-artifact@v2
+        uses: actions/download-artifact@v3
         with:
           name: iTunesSetup
           
