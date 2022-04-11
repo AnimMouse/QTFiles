@@ -63,13 +63,13 @@ jobs:
         
       - name: Download iTunes installer 64-bit
         if: matrix.bit == 'QTfiles64'
-        uses: actions/download-artifact@v2
+        uses: actions/download-artifact@v3
         with:
           name: iTunes64Setup
           
       - name: Download iTunes installer 32-bit
         if: matrix.bit == 'QTfiles'
-        uses: actions/download-artifact@v2
+        uses: actions/download-artifact@v3
         with:
           name: iTunesSetup
           
@@ -134,19 +134,19 @@ jobs:
         
     steps:
       - name: Download ${{ matrix.bit }}
-        uses: actions/download-artifact@v2
+        uses: actions/download-artifact@v3
         with:
           name: ${{ matrix.bit }}
           path: ${{ matrix.bit }}
           
       - name: Download ${{ matrix.bit }} Visual Studio Runtime
-        uses: actions/download-artifact@v2
+        uses: actions/download-artifact@v3
         with:
           name: ${{ matrix.bit }}-msvc
           path: ${{ matrix.bit }}-msvc
           
       - name: Download ${{ matrix.bit }} original icudt${{ github.event.inputs.icu_version }}.dll
-        uses: actions/download-artifact@v2
+        uses: actions/download-artifact@v3
         with:
           name: ${{ matrix.bit }}-icudt${{ github.event.inputs.icu_version }}
           
@@ -182,32 +182,32 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Download QTfiles64 archive
-        uses: actions/download-artifact@v2
+        uses: actions/download-artifact@v3
         with:
           name: QTfiles64-archive
           
       - name: Download QTfiles archive
-        uses: actions/download-artifact@v2
+        uses: actions/download-artifact@v3
         with:
           name: QTfiles-archive
           
       - name: Download QTfiles64 Visual Studio Runtime archive
-        uses: actions/download-artifact@v2
+        uses: actions/download-artifact@v3
         with:
           name: QTfiles64-msvc-archive
           
       - name: Download QTfiles Visual Studio Runtime archive
-        uses: actions/download-artifact@v2
+        uses: actions/download-artifact@v3
         with:
           name: QTfiles-msvc-archive
           
       - name: Download compressed QTfiles64 original icudt${{ github.event.inputs.icu_version }}.dll
-        uses: actions/download-artifact@v2
+        uses: actions/download-artifact@v3
         with:
           name: QTfiles64-icudt${{ github.event.inputs.icu_version }}-compressed
           
       - name: Download compressed QTfiles original icudt${{ github.event.inputs.icu_version }}.dll
-        uses: actions/download-artifact@v2
+        uses: actions/download-artifact@v3
         with:
           name: QTfiles-icudt${{ github.event.inputs.icu_version }}-compressed
           
