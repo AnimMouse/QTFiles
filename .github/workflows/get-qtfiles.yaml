@@ -59,7 +59,7 @@ jobs:
         run: Move-Item .\makeportable\makeportable2.cmd makeportable2.cmd
         
       - name: Download Dummy DLL Generator
-        run: Invoke-WebRequest https://github.com/ykhwong/dummy-dll-generator/releases/download/20190627/dummyDLL.exe -OutFile dummyDLL.exe
+        run: Invoke-WebRequest $env:GITHUB_SERVER_URL/ykhwong/dummy-dll-generator/releases/latest/download/dummyDLL.exe -OutFile dummyDLL.exe
         
       - name: Download iTunes installer 64-bit
         if: matrix.bit == 'QTfiles64'
@@ -83,13 +83,8 @@ jobs:
       - name: Move original icudt${{ github.event.inputs.icu_version }}.dll
         run: Move-Item .\${{ matrix.bit }}\icudt${{ github.event.inputs.icu_version }}.dll .
         
-      - name: Move generated dummy icudt${{ github.event.inputs.icu_version }}.dll 64-bit
-        if: matrix.bit == 'QTfiles64'
-        run: Move-Item out.dll .\QTfiles64\icudt${{ github.event.inputs.icu_version }}.dll
-        
-      - name: Move generated dummy icudt${{ github.event.inputs.icu_version }}.dll 32-bit
-        if: matrix.bit == 'QTfiles'
-        run: Move-Item dllmain.dll .\QTfiles\icudt${{ github.event.inputs.icu_version }}.dll
+      - name: Move generated dummy icudt${{ github.event.inputs.icu_version }}.dll
+        run: Move-Item out.dll .\${{ matrix.bit }}\icudt${{ github.event.inputs.icu_version }}.dll
         
       - name: Upload ${{ matrix.bit }}
         uses: actions/upload-artifact@v3
