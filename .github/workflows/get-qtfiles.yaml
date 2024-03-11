@@ -207,7 +207,7 @@ jobs:
           name: QTfiles-icudt${{ github.event.inputs.icu_version }}-compressed
           
       - name: Release
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@v2
         with:
           name: QTFiles v${{ github.event.inputs.itunes_version }}
           tag_name: v${{ github.event.inputs.itunes_version }}
