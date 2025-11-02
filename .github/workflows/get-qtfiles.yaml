@@ -1,223 +1,196 @@
 name: Get QTfiles from iTunes installer
 on:
   workflow_dispatch:
-    inputs:
-      win64_url:
-        description: 64-bit iTunes installer for Windows
-        required: true
-        default: https://secure-appldnld.apple.com/itunes12/001-80053-20210422-E8A3B28C-A3B2-11EB-BE07-CE1B67FC6302/iTunes64Setup.exe
-      win32_url:
-        description: 32-bit iTunes installer for Windows
-        required: true
-        default: https://secure-appldnld.apple.com/itunes12/001-80042-20210422-E8A351F2-A3B2-11EB-9A8F-CF1B67FC6302/iTunesSetup.exe
-      itunes_version:
-        description: Version of iTunes installer for Windows
-        required: true
-        default: 12.10.11
-      icu_version:
-        description: Version of International Components for Unicode data inside iTunes installer
-        required: true
-        default: 62
-        
+  
 jobs:
-  download:
+  check-and-download:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        bit: [iTunes64Setup, iTunesSetup]
+        arch: [win64, win32]
         
     steps:
-      - name: Download iTunes installer 64-bit
-        if: matrix.bit == 'iTunes64Setup'
-        run: aria2c -x 16 -o iTunes64Setup.exe "${{ github.event.inputs.win64_url }}"
+      - name: Get iTunes URL, UUID, and filename
+        id: itunes
+        run: |
+          arch=${{ matrix.arch }}
+          url=$(curl -sLI -o /dev/null -w %{url_effective} https://www.apple.com/itunes/download/$arch)
+          echo url=$url >> $GITHUB_OUTPUT
+          echo uuid=$(echo $url | cut -d '/' -f 5) >> $GITHUB_OUTPUT
+          echo filename=$(echo $url | cut -d '/' -f 6) >> $GITHUB_OUTPUT
+          echo arch=${arch^^} >> $GITHUB_OUTPUT
+          
+      - name: Check if there is newer UUID
+        run: |
+          [[ "${{ steps.itunes.outputs.uuid }}" != "${{ vars[format('UUID_{0}', steps.itunes.outputs.arch)] }}" ]]
+          
+      - name: Download iTunes installer
+        run: aria2c -x 16 "${{ steps.itunes.outputs.url }}"
         
-      - name: Download iTunes installer 32-bit
-        if: matrix.bit == 'iTunesSetup'
-        run: aria2c -x 16 -o iTunesSetup.exe "${{ github.event.inputs.win32_url }}"
-        
-      - name: Upload ${{ matrix.bit }}
-        uses: actions/upload-artifact@v4
+      - name: Upload iTunes installer
+        uses: actions/upload-artifact@v5
         with:
-          name: ${{ matrix.bit }}
-          path: ${{ matrix.bit }}.exe
+          name: iTunes-${{ matrix.arch }}
+          path: ${{ steps.itunes.outputs.filename }}
+          retention-days: 1
+          compression-level: 0
           
   extract:
-    needs: download
+    needs: check-and-download
     runs-on: windows-latest
     strategy:
       matrix:
-        bit: [QTfiles64, QTfiles]
+        arch: [QTfiles64, QTfiles]
         
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-        with:
-          submodules: true
-          persist-credentials: false
-          
-      - name: Move makeportable
-        run: Move-Item .\makeportable\makeportable2.cmd makeportable2.cmd
+      - name: Download makeportable
+        run: Invoke-WebRequest https://raw.githubusercontent.com/nu774/makeportable/master/makeportable2.cmd -OutFile makeportable2.cmd
         
       - name: Download Dummy DLL Generator
         run: Invoke-WebRequest $env:GITHUB_SERVER_URL/ykhwong/dummy-dll-generator/releases/latest/download/dummyDLL.exe -OutFile dummyDLL.exe
         
-      - name: Download iTunes installer 64-bit
-        if: matrix.bit == 'QTfiles64'
-        uses: actions/download-artifact@v4
+      - name: Download iTunes installer
+        uses: actions/download-artifact@v5
         with:
-          name: iTunes64Setup
+          name: ${{ matrix.arch == 'QTfiles64' && 'iTunes-win64' || 'iTunes-win32' }}
           
-      - name: Download iTunes installer 32-bit
-        if: matrix.bit == 'QTfiles'
-        uses: actions/download-artifact@v4
-        with:
-          name: iTunesSetup
+      - name: Get iTunes version
+        id: itunes
+        run: |
+          $version = (Get-Item iTunes*.exe).VersionInfo.FileVersion
+          Add-Content $env:GITHUB_OUTPUT version=$version
           
-      - name: Use makeportable to extract ${{ matrix.bit }}
+      - name: Use makeportable to extract
         shell: cmd
         run: makeportable2.cmd
         
-      - name: Generate dummy icudt${{ github.event.inputs.icu_version }}.dll
-        run: ./dummyDLL.exe .\${{ matrix.bit }}\icudt${{ github.event.inputs.icu_version }}.dll
-        
-      - name: Move original icudt${{ github.event.inputs.icu_version }}.dll
-        run: Move-Item .\${{ matrix.bit }}\icudt${{ github.event.inputs.icu_version }}.dll .
-        
-      - name: Move generated dummy icudt${{ github.event.inputs.icu_version }}.dll
-        run: Move-Item out.dll .\${{ matrix.bit }}\icudt${{ github.event.inputs.icu_version }}.dll
-        
-      - name: Upload ${{ matrix.bit }}
-        uses: actions/upload-artifact@v4
-        with:
-          name: ${{ matrix.bit }}
-          path: |
-            ${{ matrix.bit }}/*.dll
-            !${{ matrix.bit }}/api-*.dll
-            !${{ matrix.bit }}/concrt140.dll
-            !${{ matrix.bit }}/msvc*.dll
-            !${{ matrix.bit }}/ucrtbase.dll
-            !${{ matrix.bit }}/vc*.dll
-            
-      - name: Upload ${{ matrix.bit }} original icudt${{ github.event.inputs.icu_version }}.dll
-        uses: actions/upload-artifact@v4
-        with:
-          name: ${{ matrix.bit }}-icudt${{ github.event.inputs.icu_version }}
-          path: icudt${{ github.event.inputs.icu_version }}.dll
+      - name: Get ICU version
+        id: icu
+        run: |
+          $icu_file = Get-ChildItem -Path ${{ matrix.arch }} -Filter "icudt*.dll" -File
+          $icu_version = $Matches[1]
+          Add-Content $env:GITHUB_OUTPUT version=$icu_version
           
-      - name: Upload ${{ matrix.bit }} Visual Studio Runtime
-        uses: actions/upload-artifact@v4
-        with:
-          name: ${{ matrix.bit }}-msvc
-          path: |
-            ${{ matrix.bit }}/concrt140.dll
-            ${{ matrix.bit }}/msvc*.dll
-            ${{ matrix.bit }}/ucrtbase.dll
-            ${{ matrix.bit }}/vc*.dll
-            
-      - name: Upload ${{ matrix.bit }} MS Win API
-        uses: actions/upload-artifact@v4
-        with:
-          name: ${{ matrix.bit }}-api-ms-win
-          path: ${{ matrix.bit }}/api-*.dll
+      - name: Generate dummy ICU
+        run: |
+          ./dummyDLL.exe .\${{ matrix.arch }}\icudt${{ steps.icu.outputs.version }}.dll
+          Move-Item .\${{ matrix.arch }}\icudt${{ steps.icu.outputs.version }}.dll .
+          Move-Item out.dll .\${{ matrix.arch }}\icudt${{ steps.icu.outputs.version }}.dll
           
+      - name: Upload ${{ matrix.arch }}
+        uses: actions/upload-artifact@v5
+        with:
+          name: ${{ matrix.arch }}
+          path: |
+            ${{ matrix.arch }}/*.dll
+            !${{ matrix.arch }}/api-*.dll
+            !${{ matrix.arch }}/concrt140.dll
+            !${{ matrix.arch }}/msvc*.dll
+            !${{ matrix.arch }}/ucrtbase.dll
+            !${{ matrix.arch }}/vc*.dll
+          retention-days: 1
+          
+      - name: Upload ${{ matrix.arch }} original ICU
+        uses: actions/upload-artifact@v5
+        with:
+          name: ${{ matrix.arch }}-ICU
+          path: icudt${{ steps.icu.outputs.version }}.dll
+          retention-days: 1
+          
+      - name: Upload ${{ matrix.arch }} Visual Studio Runtime
+        uses: actions/upload-artifact@v5
+        with:
+          name: ${{ matrix.arch }}-MSVC
+          path: |
+            ${{ matrix.arch }}/concrt140.dll
+            ${{ matrix.arch }}/msvc*.dll
+            ${{ matrix.arch }}/ucrtbase.dll
+            ${{ matrix.arch }}/vc*.dll
+          retention-days: 1
+          
+    outputs:
+      itunes-version: ${{ steps.itunes.outputs.version }}
+      icu-version: ${{ steps.icu.outputs.version }}
+      
   archive:
-    needs: [download, extract]
+    needs: [check-and-download, extract]
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        bit: [QTfiles64, QTfiles]
+        arch: [QTfiles64, QTfiles]
         
     steps:
-      - name: Download ${{ matrix.bit }}
-        uses: actions/download-artifact@v4
+      - name: Download ${{ matrix.arch }}
+        uses: actions/download-artifact@v5
         with:
-          name: ${{ matrix.bit }}
-          path: ${{ matrix.bit }}
+          name: ${{ matrix.arch }}
+          path: ${{ matrix.arch }}
           
-      - name: Download ${{ matrix.bit }} Visual Studio Runtime
-        uses: actions/download-artifact@v4
+      - name: Download ${{ matrix.arch }} Visual Studio Runtime
+        uses: actions/download-artifact@v5
         with:
-          name: ${{ matrix.bit }}-msvc
-          path: ${{ matrix.bit }}-msvc
+          name: ${{ matrix.arch }}-MSVC
+          path: ${{ matrix.arch }}-MSVC
           
-      - name: Download ${{ matrix.bit }} original icudt${{ github.event.inputs.icu_version }}.dll
-        uses: actions/download-artifact@v4
+      - name: Download ${{ matrix.arch }} original ICU
+        uses: actions/download-artifact@v5
         with:
-          name: ${{ matrix.bit }}-icudt${{ github.event.inputs.icu_version }}
+          name: ${{ matrix.arch }}-ICU
           
-      - name: 7zip ${{ matrix.bit }}
-        run: 7z a ${{ matrix.bit }}.7z ./${{ matrix.bit }}/* -mx=9
+      - name: 7zip ${{ matrix.arch }}
+        run: 7z a -mx=9 ${{ matrix.arch }}.7z ./${{ matrix.arch }}/*
         
-      - name: 7zip ${{ matrix.bit }} Visual Studio Runtime
-        run: 7z a ${{ matrix.bit  }}-msvc.7z ./${{ matrix.bit }}-msvc/* -mx=9
+      - name: 7zip ${{ matrix.arch }} Visual Studio Runtime
+        run: 7z a -mx=9 ${{ matrix.arch }}-MSVC.7z ./${{ matrix.arch }}-MSVC/*
         
-      - name: Zstd ${{ matrix.bit }} original icudt${{ github.event.inputs.icu_version }}.dll
-        run: zstd -19 icudt${{ github.event.inputs.icu_version }}.dll -o ${{ matrix.bit }}-icudt${{ github.event.inputs.icu_version }}.dll.zst
+      - name: Zstd ${{ matrix.arch }} original ICU
+        run: zstd -19 icudt${{ needs.extract.outputs.icu-version }}.dll -o ${{ matrix.arch }}-icudt${{ needs.extract.outputs.icu-version }}.dll.zst
         
-      - name: Upload ${{ matrix.bit }} archive
-        uses: actions/upload-artifact@v4
+      - name: Upload ${{ matrix.arch }}
+        uses: actions/upload-artifact@v5
         with:
-          name: ${{ matrix.bit }}-archive
-          path: ${{ matrix.bit }}.7z
+          name: 7z-${{ matrix.arch }}
+          path: ${{ matrix.arch }}.7z
+          retention-days: 1
+          compression-level: 0
           
-      - name: Upload ${{ matrix.bit }} Visual Studio Runtime archive
-        uses: actions/upload-artifact@v4
+      - name: Upload ${{ matrix.arch }} Visual Studio Runtime
+        uses: actions/upload-artifact@v5
         with:
-          name: ${{ matrix.bit }}-msvc-archive
-          path: ${{ matrix.bit }}-msvc.7z
+          name: 7z-${{ matrix.arch }}-MSVC
+          path: ${{ matrix.arch }}-MSVC.7z
+          retention-days: 1
+          compression-level: 0
           
-      - name: Upload compressed ${{ matrix.bit }} original icudt${{ github.event.inputs.icu_version }}.dll
-        uses: actions/upload-artifact@v4
+      - name: Upload ${{ matrix.arch }} original ICU
+        uses: actions/upload-artifact@v5
         with:
-          name: ${{ matrix.bit }}-icudt${{ github.event.inputs.icu_version }}-compressed
-          path: ${{ matrix.bit }}-icudt${{ github.event.inputs.icu_version }}.dll.zst
+          name: 7z-${{ matrix.arch }}-ICU
+          path: ${{ matrix.arch }}-icudt${{ needs.extract.outputs.icu-version }}.dll.zst
+          retention-days: 1
+          compression-level: 0
           
   release:
-    needs: [download, extract, archive]
+    permissions:
+      contents: write
+    needs: [check-and-download, extract, archive]
     runs-on: ubuntu-latest
     steps:
-      - name: Download QTfiles64 archive
-        uses: actions/download-artifact@v4
+      - name: Download all archives
+        uses: actions/download-artifact@v5
         with:
-          name: QTfiles64-archive
-          
-      - name: Download QTfiles archive
-        uses: actions/download-artifact@v4
-        with:
-          name: QTfiles-archive
-          
-      - name: Download QTfiles64 Visual Studio Runtime archive
-        uses: actions/download-artifact@v4
-        with:
-          name: QTfiles64-msvc-archive
-          
-      - name: Download QTfiles Visual Studio Runtime archive
-        uses: actions/download-artifact@v4
-        with:
-          name: QTfiles-msvc-archive
-          
-      - name: Download compressed QTfiles64 original icudt${{ github.event.inputs.icu_version }}.dll
-        uses: actions/download-artifact@v4
-        with:
-          name: QTfiles64-icudt${{ github.event.inputs.icu_version }}-compressed
-          
-      - name: Download compressed QTfiles original icudt${{ github.event.inputs.icu_version }}.dll
-        uses: actions/download-artifact@v4
-        with:
-          name: QTfiles-icudt${{ github.event.inputs.icu_version }}-compressed
+          pattern: 7z-*
+          merge-multiple: true
           
       - name: Release
-        uses: softprops/action-gh-release@v1
-        with:
-          name: QTFiles v${{ github.event.inputs.itunes_version }}
-          tag_name: v${{ github.event.inputs.itunes_version }}
-          body: |
-            Extracted from the version ${{ github.event.inputs.itunes_version }} of Windows iTunes.
-            International Components for Unicode data version ${{ github.event.inputs.icu_version }}
-          files: |
-            QTfiles64.7z
-            QTfiles.7z
-            QTfiles64-msvc.7z
-            QTfiles-msvc.7z
-            QTfiles64-icudt${{ github.event.inputs.icu_version }}.dll.zst
-            QTfiles-icudt${{ github.event.inputs.icu_version }}.dll.zst
+        run: |
+          gh release create "v${{ needs.extract.outputs.itunes-version }}" \
+          {QTfiles64,QTfiles}.7z \
+          {QTfiles64,QTfiles}-MSVC.7z \
+          {QTfiles64,QTfiles}-icudt${{ needs.extract.outputs.icu-version }}.dll.zst \
+          -n "Extracted from the version ${{ needs.extract.outputs.itunes-version }} of Windows iTunes.
+          International Components for Unicode data version ${{ needs.extract.outputs.icu-version }}" \
+          -t "QTFiles v${{ needs.extract.outputs.itunes-version }}"
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
