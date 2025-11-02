@@ -17,6 +17,7 @@ jobs:
           url=$(curl -sLI -o /dev/null -w %{url_effective} https://www.apple.com/itunes/download/$arch)
           echo url=$url >> $GITHUB_OUTPUT
           echo uuid=$(echo $url | cut -d '/' -f 5) >> $GITHUB_OUTPUT
+          echo $uuid > $arch.txt
           echo filename=$(echo $url | cut -d '/' -f 6) >> $GITHUB_OUTPUT
           echo arch=${arch^^} >> $GITHUB_OUTPUT
           
@@ -34,6 +35,13 @@ jobs:
           path: ${{ steps.itunes.outputs.filename }}
           retention-days: 1
           compression-level: 0
+          
+      - name: Upload iTunes UUID
+        uses: actions/upload-artifact@v5
+        with:
+          name: UUID-${{ matrix.arch }}
+          path: ${{ matrix.arch }}.txt
+          retention-days: 1
           
   extract:
     needs: check-and-download
@@ -193,4 +201,18 @@ jobs:
           -t "QTFiles v${{ needs.extract.outputs.itunes-version }}"
         env:
           GITHUB_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          
+      - name: Download UUID
+        uses: actions/download-artifact@v5
+        with:
+          pattern: UUID-*
+          merge-multiple: true
+          
+      - name: Update UUID
+        run: |
+          gh variable set UUID_WIN64 < win64.txt
+          gh variable set UUID_WIN32 < win32.txt
+        env:
+          GITHUB_TOKEN: ${{ secrets.GH_PAT }}
           GH_REPO: ${{ github.repository }}
