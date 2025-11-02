@@ -16,7 +16,8 @@ jobs:
           arch=${{ matrix.arch }}
           url=$(curl -sLI -o /dev/null -w %{url_effective} https://www.apple.com/itunes/download/$arch)
           echo url=$url >> $GITHUB_OUTPUT
-          echo uuid=$(echo $url | cut -d '/' -f 5) >> $GITHUB_OUTPUT
+          uuid=$(echo $url | cut -d '/' -f 5)
+          echo uuid=$uuid >> $GITHUB_OUTPUT
           echo $uuid > $arch.txt
           echo filename=$(echo $url | cut -d '/' -f 6) >> $GITHUB_OUTPUT
           echo arch=${arch^^} >> $GITHUB_OUTPUT
