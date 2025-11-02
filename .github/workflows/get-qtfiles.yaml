@@ -76,6 +76,7 @@ jobs:
         id: icu
         run: |
           $icu_file = Get-ChildItem -Path ${{ matrix.arch }} -Filter "icudt*.dll" -File
+          $icu_file.Name -match 'icudt(\d+).dll'
           $icu_version = $Matches[1]
           Add-Content $env:GITHUB_OUTPUT version=$icu_version
           
