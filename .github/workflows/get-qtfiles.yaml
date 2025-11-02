@@ -59,7 +59,7 @@ jobs:
         run: Invoke-WebRequest $env:GITHUB_SERVER_URL/ykhwong/dummy-dll-generator/releases/latest/download/dummyDLL.exe -OutFile dummyDLL.exe
         
       - name: Download iTunes installer
-        uses: actions/download-artifact@v5
+        uses: actions/download-artifact@v6
         with:
           name: ${{ matrix.arch == 'QTfiles64' && 'iTunes-win64' || 'iTunes-win32' }}
           
@@ -131,19 +131,19 @@ jobs:
         
     steps:
       - name: Download ${{ matrix.arch }}
-        uses: actions/download-artifact@v5
+        uses: actions/download-artifact@v6
         with:
           name: ${{ matrix.arch }}
           path: ${{ matrix.arch }}
           
       - name: Download ${{ matrix.arch }} Visual Studio Runtime
-        uses: actions/download-artifact@v5
+        uses: actions/download-artifact@v6
         with:
           name: ${{ matrix.arch }}-MSVC
           path: ${{ matrix.arch }}-MSVC
           
       - name: Download ${{ matrix.arch }} original ICU
-        uses: actions/download-artifact@v5
+        uses: actions/download-artifact@v6
         with:
           name: ${{ matrix.arch }}-ICU
           
@@ -187,7 +187,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Download all archives
-        uses: actions/download-artifact@v5
+        uses: actions/download-artifact@v6
         with:
           pattern: 7z-*
           merge-multiple: true
@@ -206,7 +206,7 @@ jobs:
           GH_REPO: ${{ github.repository }}
           
       - name: Download UUID
-        uses: actions/download-artifact@v5
+        uses: actions/download-artifact@v6
         with:
           pattern: UUID-*
           merge-multiple: true
