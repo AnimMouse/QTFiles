@@ -30,7 +30,7 @@ jobs:
         run: aria2c -x 16 "${{ steps.itunes.outputs.url }}"
         
       - name: Upload iTunes installer
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v6
         with:
           name: iTunes-${{ matrix.arch }}
           path: ${{ steps.itunes.outputs.filename }}
@@ -38,7 +38,7 @@ jobs:
           compression-level: 0
           
       - name: Upload iTunes UUID
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v6
         with:
           name: UUID-${{ matrix.arch }}
           path: ${{ matrix.arch }}.txt
@@ -88,7 +88,7 @@ jobs:
           Move-Item out.dll .\${{ matrix.arch }}\icudt${{ steps.icu.outputs.version }}.dll
           
       - name: Upload ${{ matrix.arch }}
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v6
         with:
           name: ${{ matrix.arch }}
           path: |
@@ -101,14 +101,14 @@ jobs:
           retention-days: 1
           
       - name: Upload ${{ matrix.arch }} original ICU
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v6
         with:
           name: ${{ matrix.arch }}-ICU
           path: icudt${{ steps.icu.outputs.version }}.dll
           retention-days: 1
           
       - name: Upload ${{ matrix.arch }} Visual Studio Runtime
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v6
         with:
           name: ${{ matrix.arch }}-MSVC
           path: |
@@ -157,7 +157,7 @@ jobs:
         run: zstd -19 icudt${{ needs.extract.outputs.icu-version }}.dll -o ${{ matrix.arch }}-icudt${{ needs.extract.outputs.icu-version }}.dll.zst
         
       - name: Upload ${{ matrix.arch }}
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v6
         with:
           name: 7z-${{ matrix.arch }}
           path: ${{ matrix.arch }}.7z
@@ -165,7 +165,7 @@ jobs:
           compression-level: 0
           
       - name: Upload ${{ matrix.arch }} Visual Studio Runtime
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v6
         with:
           name: 7z-${{ matrix.arch }}-MSVC
           path: ${{ matrix.arch }}-MSVC.7z
@@ -173,7 +173,7 @@ jobs:
           compression-level: 0
           
       - name: Upload ${{ matrix.arch }} original ICU
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v6
         with:
           name: 7z-${{ matrix.arch }}-ICU
           path: ${{ matrix.arch }}-icudt${{ needs.extract.outputs.icu-version }}.dll.zst
